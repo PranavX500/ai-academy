@@ -2,6 +2,8 @@ import { motion } from "framer-motion";
 import { Mail, Lock, ArrowRight, ArrowLeft, Loader2, Chrome, Github } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import React, { useState } from "react";
+// Import the production URL from your config
+import { API_BASE_URL } from "../config/api";
 
 // Stat interface
 interface Stat { label: string; value: string; }
@@ -23,7 +25,8 @@ export const Login = () => {
     try {
       setLoading(true);
 
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      // Updated to use the production URL variable
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -122,7 +125,6 @@ export const Login = () => {
             </p>
           </div>
 
-          {/* ✅ FIXED FORM */}
           <form className="space-y-6" onSubmit={handleLogin}>
             
             <div>
@@ -162,7 +164,6 @@ export const Login = () => {
               </div>
             </div>
 
-            {/* ✅ FIXED BUTTON */}
             <motion.button
               type="submit"
               disabled={loading}

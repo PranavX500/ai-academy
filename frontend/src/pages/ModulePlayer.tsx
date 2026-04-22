@@ -5,6 +5,8 @@ import {
   ChevronLeft, ArrowRight, ArrowLeft, Loader2,
   HelpCircle, CheckCircle2, XCircle, CheckCircle, Sparkles, Zap
 } from "lucide-react";
+// Import the production URL from your config
+import { API_BASE_URL } from "../config/api";
 
 // --- Types ---
 interface ContentItem { type: "video" | "text"; value: string; _id: string; }
@@ -52,7 +54,6 @@ const toReadableBlocks = (raw: string): ReadableBlock[] => {
       return;
     }
 
-    // If it is one big paragraph, split by sentences into smaller readable paragraphs
     if (!section.includes("\n") && section.length > 320) {
       const sentences = section.split(/(?<=[.!?])\s+/).filter(Boolean);
       if (sentences.length > 3) {
@@ -75,17 +76,14 @@ export const ModulePlayer = () => {
   const [activeUnitIndex, setActiveUnitIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   
-  // Quiz State
   const [quizMode, setQuizMode] = useState(false);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const [quizResult, setQuizResult] = useState<{ passed: boolean; score: number } | null>(null);
   const [quizLoading, setQuizLoading] = useState(false);
 
-  // NEW: phase unlock control (index 0 unlocked by default)
   const [unlockedUnitIndexes, setUnlockedUnitIndexes] = useState<number[]>([0]);
 
-  // FIX: progress bar motion value
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -96,12 +94,12 @@ export const ModulePlayer = () => {
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/contents/${moduleId}`, { credentials: "include" });
+        const res = await fetch(`${API_BASE_URL}/api/contents/${moduleId}`, { credentials: "include" });
         const json = await res.json();
         if (json.ok && Array.isArray(json.data)) {
           setUnits(json.data);
           setActiveUnitIndex(0);
-          setUnlockedUnitIndexes([0]); // reset lock state when module changes
+          setUnlockedUnitIndexes([0]);
         }
       } catch (err) { console.error(err); } finally { setLoading(false); }
     };
@@ -113,7 +111,7 @@ export const ModulePlayer = () => {
     if (!currentContentId) return;
     setQuizLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/quizzes/${currentContentId}`, { credentials: "include" });
+      const res = await fetch(`${API_BASE_URL}/api/quizzes/${currentContentId}`, { credentials: "include" });
       const json = await res.json();
       const fetchedQuestions = json.data?.[0]?.questions || [];
       setQuestions(fetchedQuestions);
@@ -124,9 +122,9 @@ export const ModulePlayer = () => {
 
   const markContentCompleted = async (contentId: string) => {
     const endpoints = [
-      "http://localhost:5000/api/progress/complete",
-      "http://localhost:5000/api/progress/mark-complete",
-      `http://localhost:5000/api/contents/${contentId}/complete`
+      `${API_BASE_URL}/api/progress/complete`,
+      `${API_BASE_URL}/api/progress/mark-complete`,
+      `${API_BASE_URL}/api/contents/${contentId}/complete`
     ];
 
     for (const url of endpoints) {
@@ -138,23 +136,18 @@ export const ModulePlayer = () => {
           body: JSON.stringify({ contentId, completed: true })
         });
         if (res.ok) return true;
-      } catch {
-        // try next endpoint
-      }
+      } catch { continue; }
     }
     return false;
   };
 
   const triggerCertificateCheck = async () => {
     try {
-      // dashboard service is where certificate trigger is usually wired
-      await fetch("http://localhost:5000/api/dashboard", {
+      await fetch(`${API_BASE_URL}/api/dashboard`, {
         method: "GET",
         credentials: "include"
       });
-    } catch {
-      // non-blocking
-    }
+    } catch { /* non-blocking */ }
   };
 
   const submitQuiz = async () => {
@@ -162,7 +155,7 @@ export const ModulePlayer = () => {
     if (!currentContentId) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/quiz/submit`, {
+      const res = await fetch(`${API_BASE_URL}/api/quiz/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contentId: currentContentId, answers: userAnswers }),
@@ -175,23 +168,16 @@ export const ModulePlayer = () => {
       setQuizResult({ passed, score });
 
       if (passed) {
-        // Persist progress to backend for this user/content
         await markContentCompleted(currentContentId);
-
-        // unlock next phase in UI
         setUnlockedUnitIndexes((prev) => {
           const next = activeUnitIndex + 1;
           return prev.includes(next) ? prev : [...prev, next];
         });
-
-        // If last phase completed, trigger certificate generation check
         if (activeUnitIndex === units.length - 1) {
           await triggerCertificateCheck();
         }
       }
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   if (loading) return (
@@ -204,15 +190,12 @@ export const ModulePlayer = () => {
   );
 
   const currentUnit = units[activeUnitIndex];
-
-  // FIX: flags used in footer controls
   const isCurrentUnlocked = unlockedUnitIndexes.includes(activeUnitIndex);
   const canGoNext = unlockedUnitIndexes.includes(activeUnitIndex + 1);
 
   return (
     <div className="h-screen bg-[#F4F7F6] flex overflow-hidden font-sans selection:bg-[#00FFD1] selection:text-[#0A2E2A]">
       
-      {/* BUG FIX: Progress Bar is now outside any transform containers and uses layout-safe positioning */}
       <div className="fixed top-0 left-0 right-0 h-1.5 z-[100] bg-gray-200/20 backdrop-blur-sm">
         <motion.div 
           className="h-full bg-gradient-to-r from-[#0A5E53] to-[#00FFD1] shadow-[0_0_15px_rgba(0,255,209,0.4)]" 
@@ -220,7 +203,6 @@ export const ModulePlayer = () => {
         />
       </div>
 
-      {/* Floating Sidebar */}
       <aside className="w-85 p-6 hidden lg:flex flex-col relative z-20">
         <div className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[40px] flex flex-col h-full overflow-hidden">
           <div className="p-8 pb-4">
@@ -263,7 +245,6 @@ export const ModulePlayer = () => {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto relative z-10 scroll-smooth">
         <div className="max-w-4xl mx-auto py-20 px-8">
           <AnimatePresence mode="wait">
@@ -310,15 +291,11 @@ export const ModulePlayer = () => {
                           <div className="space-y-5 text-[18px] leading-9">
                             {toReadableBlocks(item.value).map((block, i) =>
                               block.type === "paragraph" ? (
-                                <p key={i} className="font-medium">
-                                  {block.text}
-                                </p>
+                                <p key={i} className="font-medium">{block.text}</p>
                               ) : (
                                 <ul key={i} className="list-disc pl-6 space-y-2 marker:text-[#0A5E53]">
                                   {block.items.map((li, j) => (
-                                    <li key={j} className="font-medium">
-                                      {li}
-                                    </li>
+                                    <li key={j} className="font-medium">{li}</li>
                                   ))}
                                 </ul>
                               )
@@ -339,11 +316,8 @@ export const ModulePlayer = () => {
                     <ArrowLeft className="w-6 h-6" />
                   </button>
 
-                  <div className="text-[10px] font-mono text-white/40 tracking-[0.3em]">
-                    SYSTEM STATUS: READY
-                  </div>
+                  <div className="text-[10px] font-mono text-white/40 tracking-[0.3em]">SYSTEM STATUS: READY</div>
 
-                  {/* NEW: Require quiz pass before next phase */}
                   {activeUnitIndex < units.length - 1 && canGoNext ? (
                     <button
                       onClick={() => setActiveUnitIndex((i) => i + 1)}

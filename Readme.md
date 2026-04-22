@@ -11,7 +11,7 @@ AI Academy is a modern AI-powered learning platform built to help students learn
 - Learning units with text, videos, and quizzes
 - Module progression tracking
 - Course completion tracking
-- Protected paid modules
+- Protected paid modulessss
 
 ---
 

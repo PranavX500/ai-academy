@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
-  BookOpen, Clock, PlayCircle, Layout, 
-  Trophy, GraduationCap, Loader2, 
-  ArrowRight, Settings, LogOut, CheckCircle2, Lock 
+  BookOpen, Clock, PlayCircle, 
+  Loader2, ArrowRight, Lock 
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AppNavbar } from "../components/PageContent";
+// Importing the production URL from your config
+import { API_BASE_URL } from "../config/api";
 
 interface Module {
   _id: string;
@@ -39,7 +40,8 @@ export const MyCourses = () => {
           "Content-Type": "application/json"
         };
 
-        const modulesRes = await fetch("http://localhost:5000/api/modules", {
+        // 1. Fetch Modules using production URL
+        const modulesRes = await fetch(`${API_BASE_URL}/api/modules`, {
           method: "GET",
           headers,
           credentials: "include"
@@ -52,8 +54,8 @@ export const MyCourses = () => {
         const modulesJson = await modulesRes.json();
         const rawModules = modulesJson.data || [];
 
-        // Fetch user profile for name
-        const profileRes = await fetch("http://localhost:5000/api/profile", {
+        // 2. Fetch user profile for name using production URL
+        const profileRes = await fetch(`${API_BASE_URL}/api/profile`, {
           credentials: "include",
         });
         if (profileRes.ok) {
@@ -61,10 +63,11 @@ export const MyCourses = () => {
           setUserName(profileData.data?.user?.fullName || "User");
         }
 
+        // 3. Fetch progress for each module using production URL
         const modulesWithProgress = await Promise.all(
           rawModules.map(async (module: any) => {
             try {
-              const progRes = await fetch(`http://localhost:5000/api/courses/${module.courseId}/progress`, {
+              const progRes = await fetch(`${API_BASE_URL}/api/courses/${module.courseId}/progress`, {
                 method: "GET",
                 headers,
                 credentials: "include"

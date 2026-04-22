@@ -6,6 +6,8 @@ import {
 import { Link, useSearchParams } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import { AppNavbar } from "../components/PageContent";
+// Import the production URL from your config
+import { API_BASE_URL } from "../config/api";
 
 export const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,7 +26,8 @@ export const Dashboard = () => {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/dashboard", {
+        // Updated to use the production URL variable
+        const res = await fetch(`${API_BASE_URL}/api/dashboard`, {
           credentials: "include",
         });
 
@@ -37,8 +40,8 @@ export const Dashboard = () => {
         setGlobal(data.data.global);
         setCourses(data.data.courses);
         
-        // Fetch user profile for name
-        const profileRes = await fetch("http://localhost:5000/api/profile", {
+        // Fetch user profile for name using production URL
+        const profileRes = await fetch(`${API_BASE_URL}/api/profile`, {
           credentials: "include",
         });
         if (profileRes.ok) {
@@ -47,7 +50,7 @@ export const Dashboard = () => {
         }
 
       } catch (err) {
-        console.error(err);
+        console.error("Dashboard error:", err);
       }
     };
 
@@ -73,7 +76,6 @@ export const Dashboard = () => {
     <div className="min-h-screen bg-[#F8FAFB] flex font-sans text-[#0A2E2A]">
       <AppNavbar />
 
-      {/* Main - Add md:ml-64 to offset sidebar on desktop */}
       <main className="flex-1 flex flex-col min-h-screen md:ml-64 mt-16 md:mt-0">
         
         {/* Header */}
@@ -166,11 +168,16 @@ export const Dashboard = () => {
                   />
                 </div>
 
-                <button className="mt-5 flex items-center gap-2 text-sm font-bold text-[#0A5E53]">
+                <Link 
+                  to={`/Course`} 
+                  className="mt-5 flex items-center gap-2 text-sm font-bold text-[#0A5E53] hover:opacity-80 transition-opacity"
+                >
                   Continue <ArrowRight className="w-4 h-4" />
-                </button>
+                </Link>
               </motion.div>
             ))}
+            
+            {/* Empty State */}
             {courses.filter(course => 
               course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
               course.modules.some((module: any) => 

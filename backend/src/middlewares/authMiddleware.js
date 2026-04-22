@@ -19,7 +19,7 @@ export function authMiddleware(req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(finalToken, env.jwt_Secret);
+    const decoded = jwt.verify(finalToken, env.JWT_SECRET);
 
     req.user = decoded;
     next();
