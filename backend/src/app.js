@@ -10,14 +10,26 @@ import mainRoutes from "./routes/index.js";
 const app = express();
 
 // 1. CORS Configuration
-// Added common local ports (3000, 5173, 8080) for your development phase
+// Allow frontend domains and local development ports
+const allowedOrigins = [
+  // Local development
+  "http://localhost:3000", 
+  "http://localhost:5173", 
+  "http://localhost:8080",
+  "http://127.0.0.1:5173",
+  // Production frontend URL
+  "https://your-frontend-domain.com"
+];
+
 app.use(cors({
-  origin: [
-    "http://localhost:3000", 
-    "http://localhost:5173", 
-    "http://localhost:8080",
-    "http://127.0.0.1:5173"
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]

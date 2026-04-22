@@ -1,8 +1,51 @@
 import { motion } from "framer-motion";
-import { Mail, Lock, User, ArrowRight, Chrome, Github, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Mail, Lock, User, ArrowRight, Chrome, Github, ArrowLeft, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useState, FormEvent } from "react";
+import { API_BASE_URL } from "../config/api";
 
 export const Signup = () => {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const handleSignup = async (e: FormEvent) => {
+    e.preventDefault();
+    
+    if (!fullName || !email || !password) {
+      setError("Please fill all fields");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Signup failed");
+      }
+
+      // Redirect to login after successful signup
+      navigate("/login");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Animation Variants (Fixed syntax here)
   const staggerContainer = {
     hidden: { opacity: 0 },
     visible: {
@@ -84,7 +127,14 @@ export const Signup = () => {
             </p>
           </div>
 
-          <form className="space-y-5">
+          <form className="space-y-5" onSubmit={handleSignup}>
+            {/* Error Message */}
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                {error}
+              </div>
+            )}
+
             {/* Full Name */}
             <div>
               <label className="block text-[11px] font-bold text-gray-700 mb-2 uppercase tracking-wider">Full Name</label>
@@ -93,7 +143,10 @@ export const Signup = () => {
                 <input
                   type="text"
                   placeholder="John Doe"
-                  className="w-full pl-12 pr-4 py-3.5 bg-[#F0F7F6] border-transparent rounded-2xl text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#0A5E53] transition-all outline-none"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  disabled={loading}
+                  className="w-full pl-12 pr-4 py-3.5 bg-[#F0F7F6] border-transparent rounded-2xl text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#0A5E53] transition-all outline-none disabled:opacity-50"
                 />
               </div>
             </div>
@@ -106,7 +159,10 @@ export const Signup = () => {
                 <input
                   type="email"
                   placeholder="john@example.com"
-                  className="w-full pl-12 pr-4 py-3.5 bg-[#F0F7F6] border-transparent rounded-2xl text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#0A5E53] transition-all outline-none"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
+                  className="w-full pl-12 pr-4 py-3.5 bg-[#F0F7F6] border-transparent rounded-2xl text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#0A5E53] transition-all outline-none disabled:opacity-50"
                 />
               </div>
             </div>
@@ -119,17 +175,30 @@ export const Signup = () => {
                 <input
                   type="password"
                   placeholder="••••••••••••"
-                  className="w-full pl-12 pr-4 py-3.5 bg-[#F0F7F6] border-transparent rounded-2xl text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#0A5E53] transition-all outline-none"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  className="w-full pl-12 pr-4 py-3.5 bg-[#F0F7F6] border-transparent rounded-2xl text-gray-900 focus:bg-white focus:ring-2 focus:ring-[#0A5E53] transition-all outline-none disabled:opacity-50"
                 />
               </div>
             </div>
 
             <motion.button
+              type="submit"
+              disabled={loading}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
-              className="w-full bg-[#0A5E53] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#0A5E53]/20 hover:bg-[#084d44] transition-colors mt-2"
+              className="w-full bg-[#0A5E53] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#0A5E53]/20 hover:bg-[#084d44] transition-colors mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Get Started <ArrowRight className="w-4 h-4" />
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Creating Account...
+                </>
+              ) : (
+                <>
+                  Get Started <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </motion.button>
           </form>
 
